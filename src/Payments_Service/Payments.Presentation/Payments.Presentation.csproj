@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\SharedKernel\SharedKernel.csproj" />
+      <ProjectReference Include="..\Payments.Entities\Payments.Entities.csproj" />
+      <ProjectReference Include="..\Payments.UseCases\Payments.UseCases.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    </ItemGroup>
+    
+
+</Project>

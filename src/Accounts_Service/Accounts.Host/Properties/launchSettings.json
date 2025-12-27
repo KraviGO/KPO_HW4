@@ -1,0 +1,11 @@
+﻿{
+  "profiles": {
+    "Accounts.Host": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:8084",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

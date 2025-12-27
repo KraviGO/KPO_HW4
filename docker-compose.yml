@@ -1,0 +1,115 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: gogon-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  accounts:
+    build:
+      context: .
+      dockerfile: src/Accounts_Service/Accounts.Host/Dockerfile
+    container_name: gogon-accounts
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__AccountsDb: "Data Source=/data/accounts.db"
+    volumes:
+      - accounts_data:/data
+    ports:
+      - "8084:8080"
+    restart: unless-stopped
+
+  orders:
+    build:
+      context: .
+      dockerfile: src/Orders_Service/Orders.Host/Dockerfile
+    container_name: gogon-orders
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+      ConnectionStrings__OrdersDb: "Data Source=/data/orders.db"
+
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__UserName: "guest"
+      RabbitMq__Password: "guest"
+      RabbitMq__PaymentRequestsQueue: "orders.payment.requested"
+      RabbitMq__PaymentResultsQueue: "orders.payment.result"
+    volumes:
+      - orders_data:/data
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+
+  payments:
+    build:
+      context: .
+      dockerfile: src/Payments_Service/Payments.Host/Dockerfile
+    container_name: gogon-payments
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
+
+      ConnectionStrings__PaymentsDb: "Data Source=/data/payments.db"
+
+      RabbitMq__HostName: "rabbitmq"
+      RabbitMq__UserName: "guest"
+      RabbitMq__Password: "guest"
+      RabbitMq__PaymentRequestsQueue: "orders.payment.requested"
+      RabbitMq__PaymentResultsQueue: "orders.payment.result"
+    volumes:
+      - payments_data:/data
+    ports:
+      - "8082:8080"
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/GateWay/Gateway.Host/Dockerfile
+    container_name: gogon-gateway
+    depends_on:
+      accounts:
+        condition: service_started
+      orders:
+        condition: service_started
+      payments:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    
+  frontend:
+    build:
+      context: .
+      dockerfile: src/Frontend/Frontend.Host/Dockerfile
+      args:
+        VITE_GATEWAY_URL: "http://localhost:8080"
+    container_name: gogon-frontend
+    depends_on:
+      - gateway
+    environment:
+      VITE_GATEWAY_URL: "http://localhost:8080"
+    ports:
+      - "8083:8080"
+    restart: unless-stopped
+
+
+volumes:
+  accounts_data:
+  orders_data:
+  payments_data:
